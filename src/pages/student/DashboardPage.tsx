@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { 
   Calendar, 
@@ -55,6 +54,9 @@ const DashboardPage = () => {
         api.get('/submissions/me')
       ]);
       
+      console.log('Dashboard response:', dashboardResponse.data);
+      console.log('Submissions response:', submissionsResponse.data);
+      
       if (dashboardResponse.data.success) {
         setDashboardData(dashboardResponse.data.data);
       } else {
@@ -88,15 +90,18 @@ const DashboardPage = () => {
   };
 
   const handleMakeSubmission = (competitionId: string) => {
+    console.log('Opening submission modal for competition:', competitionId);
     setSelectedCompetitionId(competitionId);
     setSubmissionModalOpen(true);
   };
 
-  // Check if user has already submitted for a specific event
-  const hasSubmittedForEvent = (eventId: string) => {
-    return mySubmissions.some(submission => 
-      submission.competition.eventId === eventId
+  // Check if user has already submitted for a specific competition
+  const hasSubmittedForCompetition = (competitionId: string) => {
+    const hasSubmission = mySubmissions.some(submission => 
+      submission.competition.id === competitionId
     );
+    console.log(`Checking submission for competition ${competitionId}:`, hasSubmission);
+    return hasSubmission;
   };
 
   // Mock data for development (remove when API is ready)
@@ -271,8 +276,11 @@ const DashboardPage = () => {
             {displayData.upcomingRegistrations?.length > 0 ? (
               displayData.upcomingRegistrations.map((registration: any) => {
                 const event = registration.event;
-                const isIndividualCompetition = event.competition && !event.competition.isTeamBased;
-                const hasSubmitted = hasSubmittedForEvent(event.id);
+                const competition = event.competition;
+                const isIndividualCompetition = competition && !competition.isTeamBased;
+                const hasSubmitted = isIndividualCompetition && hasSubmittedForCompetition(competition.id);
+                
+                console.log('Event:', event.title, 'isIndividual:', isIndividualCompetition, 'hasSubmitted:', hasSubmitted);
                 
                 return (
                   <div key={registration.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition-colors">
@@ -303,7 +311,7 @@ const DashboardPage = () => {
                         ) : (
                           <Button 
                             size="sm" 
-                            onClick={() => handleMakeSubmission(event.competition.id)}
+                            onClick={() => handleMakeSubmission(competition.id)}
                             className="bg-primary hover:bg-primary/90"
                           >
                             <Upload className="w-3 h-3 mr-1" />
