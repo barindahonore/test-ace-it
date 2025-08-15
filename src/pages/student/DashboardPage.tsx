@@ -12,48 +12,92 @@ import {
   Search,
   BarChart3,
   Award,
-  Target
+  Target,
+  CheckCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import api from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { SubmissionModal } from "@/components/submissions/SubmissionModal";
+
+interface UserSubmission {
+  id: string;
+  content: {
+    url: string;
+    description: string;
+  };
+  submittedAt: string;
+  competition: {
+    id: string;
+    eventId: string;
+  };
+}
 
 const DashboardPage = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [mySubmissions, setMySubmissions] = useState<UserSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [submissionModalOpen, setSubmissionModalOpen] = useState(false);
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await api.get('/dashboard');
-        
-        if (response.data.success) {
-          setDashboardData(response.data.data);
-        } else {
-          throw new Error(response.data.message || 'Failed to fetch dashboard data');
-        }
-      } catch (err: any) {
-        console.error('Dashboard fetch error:', err);
-        const errorMessage = err.response?.data?.message || 'Failed to load dashboard data';
-        setError(errorMessage);
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Fetch dashboard data and user submissions in parallel
+      const [dashboardResponse, submissionsResponse] = await Promise.all([
+        api.get('/dashboard'),
+        api.get('/submissions/me')
+      ]);
+      
+      if (dashboardResponse.data.success) {
+        setDashboardData(dashboardResponse.data.data);
+      } else {
+        throw new Error(dashboardResponse.data.message || 'Failed to fetch dashboard data');
       }
-    };
 
+      if (submissionsResponse.data.success) {
+        setMySubmissions(submissionsResponse.data.data || []);
+      }
+    } catch (err: any) {
+      console.error('Dashboard fetch error:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to load dashboard data';
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
   }, [toast]);
+
+  const handleSubmissionSuccess = () => {
+    // Refresh both dashboard and submissions data
+    fetchDashboardData();
+  };
+
+  const handleMakeSubmission = (competitionId: string) => {
+    setSelectedCompetitionId(competitionId);
+    setSubmissionModalOpen(true);
+  };
+
+  // Check if user has already submitted for a specific event
+  const hasSubmittedForEvent = (eventId: string) => {
+    return mySubmissions.some(submission => 
+      submission.competition.eventId === eventId
+    );
+  };
 
   // Mock data for development (remove when API is ready)
   const mockData = {
@@ -62,18 +106,28 @@ const DashboardPage = () => {
         id: 1,
         eventId: "evt1",
         event: {
+          id: "evt1",
           title: "Global Leadership Summit",
           startTime: "2024-02-15T09:00:00.000Z",
-          location: "Main Auditorium"
+          location: "Main Auditorium",
+          competition: {
+            id: "comp1",
+            isTeamBased: false
+          }
         }
       },
       {
         id: 2,
         eventId: "evt2",
         event: {
+          id: "evt2",
           title: "Innovation Workshop",
           startTime: "2024-02-20T14:00:00.000Z",
-          location: "Tech Lab"
+          location: "Tech Lab",
+          competition: {
+            id: "comp2",
+            isTeamBased: true
+          }
         }
       }
     ],
@@ -120,7 +174,7 @@ const DashboardPage = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>
+          <Button onClick={() => fetchDashboardData()}>
             Try Again
           </Button>
         </div>
@@ -176,12 +230,12 @@ const DashboardPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Recent Results</p>
-                <p className="text-2xl font-bold text-foreground">{displayData.recentResults?.length || 0}</p>
+                <p className="text-sm font-medium text-muted-foreground">Submissions</p>
+                <p className="text-2xl font-bold text-foreground">{mySubmissions.length}</p>
                 <p className="text-xs text-amber-600 font-medium">completed</p>
               </div>
               <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center dark:bg-amber-900/30">
-                <Star className="w-5 h-5 text-amber-600" />
+                <Upload className="w-5 h-5 text-amber-600" />
               </div>
             </div>
           </CardContent>
@@ -211,28 +265,60 @@ const DashboardPage = () => {
               <Calendar className="w-5 h-5 mr-2 text-primary" />
               Upcoming Events
             </CardTitle>
-            <CardDescription>Your registered events and deadlines</CardDescription>
+            <CardDescription>Your registered events and submission opportunities</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {displayData.upcomingRegistrations?.length > 0 ? (
-              displayData.upcomingRegistrations.map((registration: any) => (
-                <div key={registration.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition-colors">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Calendar className="w-4 h-4 text-primary" />
+              displayData.upcomingRegistrations.map((registration: any) => {
+                const event = registration.event;
+                const isIndividualCompetition = event.competition && !event.competition.isTeamBased;
+                const hasSubmitted = hasSubmittedForEvent(event.id);
+                
+                return (
+                  <div key={registration.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition-colors">
+                    <div className="flex items-center space-x-3 flex-1">
+                      <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <Calendar className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm text-foreground">{event.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(event.startTime)} • {event.location}
+                        </p>
+                        {isIndividualCompetition && (
+                          <Badge variant="secondary" className="mt-1 text-xs">
+                            Individual Competition
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-sm text-foreground">{registration.event.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(registration.event.startTime)} • {registration.event.location}
-                      </p>
+                    
+                    <div className="flex items-center gap-2">
+                      {isIndividualCompetition ? (
+                        hasSubmitted ? (
+                          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Submitted
+                          </Badge>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleMakeSubmission(event.competition.id)}
+                            className="bg-primary hover:bg-primary/90"
+                          >
+                            <Upload className="w-3 h-3 mr-1" />
+                            Submit
+                          </Button>
+                        )
+                      ) : (
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                          Registered
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                    Registered
-                  </Badge>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className="text-muted-foreground text-center py-8">
                 You have no upcoming events. Explore and register for one!
@@ -351,6 +437,17 @@ const DashboardPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Submission Modal */}
+      <SubmissionModal
+        competitionId={selectedCompetitionId || undefined}
+        isOpen={submissionModalOpen}
+        onClose={() => {
+          setSubmissionModalOpen(false);
+          setSelectedCompetitionId(null);
+        }}
+        onSuccess={handleSubmissionSuccess}
+      />
     </div>
   );
 };
