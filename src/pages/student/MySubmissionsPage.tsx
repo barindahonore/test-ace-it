@@ -1,87 +1,177 @@
 
-import React, { useState, useEffect } from 'react';
-import { FileText, Trophy, AlertCircle, Loader2, ExternalLink, Eye } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { format } from 'date-fns';
-import api from '@/services/api';
+import { useState, useEffect } from "react";
+import { 
+  Upload, 
+  CheckCircle, 
+  Clock, 
+  Calendar,
+  MapPin,
+  Trophy,
+  AlertCircle,
+  RefreshCw
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import api from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
+import { SubmissionModal } from "@/components/submissions/SubmissionModal";
 
-interface Submission {
+interface Registration {
   id: string;
-  submittedAt: string;
-  finalScore: number | null;
-  content: {
-    url?: string;
-    description?: string;
-  };
-  team: {
-    name: string;
-  } | null;
-  competition: {
+  userId: string;
+  eventId: string;
+  status: string;
+  registeredAt: string;
+  event: {
     id: string;
-    event: {
-      title: string;
-    };
+    title: string;
+    description?: string;
+    startTime: string;
+    endTime: string;
+    location?: string;
+    status: string;
+    competition: {
+      eventId: string;
+      isTeamBased: boolean;
+      judgingCriteria: Array<{
+        name: string;
+        maxScore: number;
+      }>;
+    } | null;
   };
 }
 
-const MySubmissionsPage: React.FC = () => {
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+interface UserSubmission {
+  id: string;
+  content: {
+    url: string;
+    description: string;
+  };
+  submittedAt: string;
+  competition: {
+    id: string;
+    eventId: string;
+  };
+  finalScore?: number;
+}
+
+const MySubmissionsPage = () => {
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [mySubmissions, setMySubmissions] = useState<UserSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submissionModalOpen, setSubmissionModalOpen] = useState(false);
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchSubmissions = async () => {
+  const fetchData = async () => {
+    try {
       setIsLoading(true);
       setError(null);
-
-      try {
-        const response = await api.get('/submissions/me');
-        setSubmissions(response.data.data || []);
-      } catch (err: any) {
-        console.error('Failed to fetch submissions:', err);
-        setError('Failed to load your submissions. Please try again later.');
-      } finally {
-        setIsLoading(false);
+      
+      // Fetch user registrations and submissions in parallel
+      const [registrationsResponse, submissionsResponse] = await Promise.all([
+        api.get('/registrations/me'),
+        api.get('/submissions/me')
+      ]);
+      
+      console.log('Registrations response:', registrationsResponse.data);
+      console.log('Submissions response:', submissionsResponse.data);
+      
+      if (registrationsResponse.data.success) {
+        setRegistrations(registrationsResponse.data.data || []);
+      } else {
+        throw new Error(registrationsResponse.data.message || 'Failed to fetch registrations');
       }
-    };
 
-    fetchSubmissions();
-  }, []);
-
-  const handleRetry = () => {
-    setError(null);
-    setIsLoading(true);
-    window.location.reload();
+      if (submissionsResponse.data.success) {
+        setMySubmissions(submissionsResponse.data.data || []);
+      }
+    } catch (err: any) {
+      console.error('Data fetch error:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to load data';
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, [toast]);
+
+  const handleSubmissionSuccess = () => {
+    // Refresh data after successful submission
+    fetchData();
+    toast({
+      title: "Success!",
+      description: "Your submission has been recorded successfully.",
+    });
+  };
+
+  const handleMakeSubmission = (competitionId: string) => {
+    console.log('Opening submission modal for competition:', competitionId);
+    setSelectedCompetitionId(competitionId);
+    setSubmissionModalOpen(true);
+  };
+
+  // Check if user has already submitted for a specific competition
+  const hasSubmittedForCompetition = (eventId: string) => {
+    const hasSubmission = mySubmissions.some(submission => 
+      submission.competition.eventId === eventId
+    );
+    console.log(`Checking submission for event ${eventId}:`, hasSubmission);
+    return hasSubmission;
+  };
+
+  const getSubmissionForCompetition = (eventId: string) => {
+    return mySubmissions.find(submission => 
+      submission.competition.eventId === eventId
+    );
+  };
+
+  // Filter for individual competitions only
+  const individualCompetitions = registrations.filter(registration => 
+    registration.event.competition && 
+    !registration.event.competition.isTeamBased &&
+    registration.event.status === 'PUBLISHED'
+  );
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'MMM d, yyyy');
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600 dark:text-green-400';
-    if (score >= 70) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
+  const isEventActive = (startTime: string, endTime: string) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    return now >= start && now <= end;
   };
 
-  const handleViewSubmission = (submission: Submission) => {
-    setSelectedSubmission(submission);
-    setIsModalOpen(true);
+  const isEventUpcoming = (startTime: string) => {
+    const now = new Date();
+    const start = new Date(startTime);
+    return now < start;
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading your submissions...</p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
         </div>
       </div>
     );
@@ -89,221 +179,215 @@ const MySubmissionsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-6 h-6" />
-              My Submissions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Alert variant="destructive">
-              <AlertCircle className="w-4 h-4" />
-              <AlertDescription>
-                {error}
-              </AlertDescription>
-            </Alert>
-            <Button onClick={handleRetry} className="mt-4">
-              Try Again
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchData}
+              className="ml-4"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
             </Button>
-          </CardContent>
-        </Card>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-3">
-          <FileText className="w-8 h-8 text-primary" />
-          My Submissions
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          View all your competition submissions and results
-        </p>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold">My Submissions</h1>
+          <p className="text-muted-foreground mt-2">
+            Submit your work for individual competitions and track your progress.
+          </p>
+        </div>
 
-      {/* Summary Stats */}
-      {submissions.length > 0 && (
-        <div className="mb-8 grid gap-4 md:grid-cols-3">
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
-            <CardContent className="text-center py-6">
-              <div className="text-2xl font-bold text-primary">{submissions.length}</div>
-              <div className="text-sm text-muted-foreground">Total Submissions</div>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Individual Competitions</p>
+                  <p className="text-2xl font-bold">{individualCompetitions.length}</p>
+                </div>
+                <Trophy className="h-8 w-8 text-primary opacity-75" />
+              </div>
             </CardContent>
           </Card>
+
           <Card>
-            <CardContent className="text-center py-6">
-              <div className="text-2xl font-bold text-primary">
-                {submissions.filter(s => s.team).length}
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Submissions Made</p>
+                  <p className="text-2xl font-bold">{mySubmissions.length}</p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-600 opacity-75" />
               </div>
-              <div className="text-sm text-muted-foreground">Team Submissions</div>
             </CardContent>
           </Card>
+
           <Card>
-            <CardContent className="text-center py-6">
-              <div className="text-2xl font-bold text-primary">
-                {submissions.filter(s => s.finalScore !== null).length}
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Pending Submissions</p>
+                  <p className="text-2xl font-bold">
+                    {individualCompetitions.length - mySubmissions.length}
+                  </p>
+                </div>
+                <Clock className="h-8 w-8 text-amber-600 opacity-75" />
               </div>
-              <div className="text-sm text-muted-foreground">Evaluated Submissions</div>
             </CardContent>
           </Card>
         </div>
-      )}
 
-      {/* Content */}
-      {submissions.length === 0 ? (
+        {/* Competitions List */}
         <Card>
-          <CardContent className="text-center py-12">
-            <Trophy className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Submissions Yet</h3>
-            <p className="text-muted-foreground mb-6">
-              You have not made any submissions yet. Find a competition to get started!
-            </p>
-            <Button onClick={() => window.location.href = '/student/events'}>
-              Browse Events
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Competition</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {submissions.map((submission) => (
-                  <TableRow key={submission.id}>
-                    <TableCell className="font-medium">
-                      {submission.competition.event.title}
-                    </TableCell>
-                    <TableCell>
-                      {submission.team ? (
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary">Team</Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {submission.team.name}
-                          </span>
+          <CardHeader>
+            <CardTitle>Individual Competitions</CardTitle>
+            <CardDescription>
+              Competitions where you can submit your individual work
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {individualCompetitions.length > 0 ? (
+              <div className="space-y-4">
+                {individualCompetitions.map((registration) => {
+                  const event = registration.event;
+                  const competition = event.competition!;
+                  const hasSubmitted = hasSubmittedForCompetition(event.id);
+                  const submission = getSubmissionForCompetition(event.id);
+                  const isActive = isEventActive(event.startTime, event.endTime);
+                  const isUpcoming = isEventUpcoming(event.startTime);
+
+                  return (
+                    <div 
+                      key={registration.id} 
+                      className="border rounded-lg p-6 hover:shadow-sm transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{event.title}</h3>
+                            {isActive && (
+                              <Badge variant="default" className="bg-green-100 text-green-800">
+                                Live
+                              </Badge>
+                            )}
+                            {isUpcoming && (
+                              <Badge variant="secondary">
+                                Upcoming
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          {event.description && (
+                            <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
+                              {event.description}
+                            </p>
+                          )}
+
+                          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              {formatDate(event.startTime)}
+                            </div>
+                            {event.location && (
+                              <div className="flex items-center">
+                                <MapPin className="h-4 w-4 mr-1" />
+                                {event.location}
+                              </div>
+                            )}
+                          </div>
+
+                          {competition.judgingCriteria && competition.judgingCriteria.length > 0 && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium mb-1">Judging Criteria:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {competition.judgingCriteria.map((criterion, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {criterion.name} ({criterion.maxScore} pts)
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {hasSubmitted && submission && (
+                            <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span className="text-sm font-medium text-green-800">
+                                  Submitted on {formatDate(submission.submittedAt)}
+                                </span>
+                              </div>
+                              <p className="text-sm text-green-700">
+                                <strong>URL:</strong> <a href={submission.content.url} target="_blank" rel="noopener noreferrer" className="underline">{submission.content.url}</a>
+                              </p>
+                              {submission.finalScore && (
+                                <p className="text-sm text-green-700">
+                                  <strong>Score:</strong> {submission.finalScore}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <Badge variant="outline">Individual</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(submission.submittedAt)}
-                    </TableCell>
-                    <TableCell>
-                      {submission.finalScore !== null ? (
-                        <Badge variant="default">Evaluated</Badge>
-                      ) : (
-                        <Badge variant="secondary">Pending</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {submission.finalScore !== null ? (
-                        <span className={`font-bold ${getScoreColor(submission.finalScore)}`}>
-                          {submission.finalScore}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewSubmission(submission)}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
-                        {submission.finalScore !== null && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(`/competitions/${submission.competition.id}/leaderboard`, '_blank')}
-                          >
-                            <Trophy className="w-4 h-4" />
-                          </Button>
-                        )}
+
+                        <div className="ml-4">
+                          {hasSubmitted ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Submitted
+                            </Badge>
+                          ) : (
+                            <Button 
+                              onClick={() => handleMakeSubmission(event.id)}
+                              className="bg-primary hover:bg-primary/90"
+                              disabled={!isActive && !isUpcoming}
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              Submit Work
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Individual Competitions</h3>
+                <p className="text-muted-foreground">
+                  You haven't registered for any individual competitions yet.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
-      )}
+      </div>
 
-      {/* Submission Detail Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedSubmission?.competition.event.title}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedSubmission && (
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">Submission Details</h4>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <p>Submitted: {formatDate(selectedSubmission.submittedAt)}</p>
-                  <p>
-                    Type: {selectedSubmission.team 
-                      ? `Team Submission (${selectedSubmission.team.name})` 
-                      : 'Individual Submission'
-                    }
-                  </p>
-                  {selectedSubmission.finalScore !== null && (
-                    <p>
-                      Score: <span className={getScoreColor(selectedSubmission.finalScore)}>
-                        {selectedSubmission.finalScore}
-                      </span>
-                    </p>
-                  )}
-                </div>
-              </div>
-              
-              {selectedSubmission.content && (
-                <div>
-                  <h4 className="font-medium mb-2">Content</h4>
-                  {selectedSubmission.content.url && (
-                    <div className="mb-2">
-                      <Button 
-                        variant="link" 
-                        className="p-0 h-auto text-primary"
-                        onClick={() => window.open(selectedSubmission.content.url, '_blank')}
-                      >
-                        <ExternalLink className="w-4 h-4 mr-1" />
-                        {selectedSubmission.content.url}
-                      </Button>
-                    </div>
-                  )}
-                  {selectedSubmission.content.description && (
-                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded">
-                      {selectedSubmission.content.description}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Submission Modal */}
+      <SubmissionModal
+        competitionId={selectedCompetitionId || undefined}
+        isOpen={submissionModalOpen}
+        onClose={() => {
+          setSubmissionModalOpen(false);
+          setSelectedCompetitionId(null);
+        }}
+        onSuccess={handleSubmissionSuccess}
+      />
     </div>
   );
 };

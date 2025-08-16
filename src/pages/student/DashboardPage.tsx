@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { 
   Calendar, 
@@ -11,15 +12,35 @@ import {
   Search,
   BarChart3,
   Award,
-  Target,
-  CheckCircle
+  Target
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import api from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
-import { SubmissionModal } from "@/components/submissions/SubmissionModal";
+import { useNavigate } from "react-router-dom";
+
+interface Registration {
+  id: string;
+  userId: string;
+  eventId: string;
+  status: string;
+  registeredAt: string;
+  event: {
+    id: string;
+    title: string;
+    description?: string;
+    startTime: string;
+    endTime: string;
+    location?: string;
+    status: string;
+    competition: {
+      eventId: string;
+      isTeamBased: boolean;
+    } | null;
+  };
+}
 
 interface UserSubmission {
   id: string;
@@ -35,32 +56,31 @@ interface UserSubmission {
 }
 
 const DashboardPage = () => {
-  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [mySubmissions, setMySubmissions] = useState<UserSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [submissionModalOpen, setSubmissionModalOpen] = useState(false);
-  const [selectedCompetitionId, setSelectedCompetitionId] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Fetch dashboard data and user submissions in parallel
-      const [dashboardResponse, submissionsResponse] = await Promise.all([
-        api.get('/dashboard'),
+      // Fetch registrations and submissions in parallel
+      const [registrationsResponse, submissionsResponse] = await Promise.all([
+        api.get('/registrations/me'),
         api.get('/submissions/me')
       ]);
       
-      console.log('Dashboard response:', dashboardResponse.data);
+      console.log('Registrations response:', registrationsResponse.data);
       console.log('Submissions response:', submissionsResponse.data);
       
-      if (dashboardResponse.data.success) {
-        setDashboardData(dashboardResponse.data.data);
+      if (registrationsResponse.data.success) {
+        setRegistrations(registrationsResponse.data.data || []);
       } else {
-        throw new Error(dashboardResponse.data.message || 'Failed to fetch dashboard data');
+        throw new Error(registrationsResponse.data.message || 'Failed to fetch registrations');
       }
 
       if (submissionsResponse.data.success) {
@@ -84,87 +104,22 @@ const DashboardPage = () => {
     fetchDashboardData();
   }, [toast]);
 
-  const handleSubmissionSuccess = () => {
-    // Refresh both dashboard and submissions data
-    fetchDashboardData();
-  };
+  // Filter registrations by type
+  const upcomingEvents = registrations.filter(reg => 
+    reg.event.status === 'PUBLISHED' && new Date(reg.event.startTime) > new Date()
+  );
+  
+  const individualCompetitions = registrations.filter(reg => 
+    reg.event.competition && 
+    !reg.event.competition.isTeamBased &&
+    reg.event.status === 'PUBLISHED'
+  );
 
-  const handleMakeSubmission = (competitionId: string) => {
-    console.log('Opening submission modal for competition:', competitionId);
-    setSelectedCompetitionId(competitionId);
-    setSubmissionModalOpen(true);
-  };
-
-  // Check if user has already submitted for a specific competition
-  const hasSubmittedForCompetition = (competitionId: string) => {
-    const hasSubmission = mySubmissions.some(submission => 
-      submission.competition.id === competitionId
-    );
-    console.log(`Checking submission for competition ${competitionId}:`, hasSubmission);
-    return hasSubmission;
-  };
-
-  // Mock data for development (remove when API is ready)
-  const mockData = {
-    upcomingRegistrations: [
-      {
-        id: 1,
-        eventId: "evt1",
-        event: {
-          id: "evt1",
-          title: "Global Leadership Summit",
-          startTime: "2024-02-15T09:00:00.000Z",
-          location: "Main Auditorium",
-          competition: {
-            id: "comp1",
-            isTeamBased: false
-          }
-        }
-      },
-      {
-        id: 2,
-        eventId: "evt2",
-        event: {
-          id: "evt2",
-          title: "Innovation Workshop",
-          startTime: "2024-02-20T14:00:00.000Z",
-          location: "Tech Lab",
-          competition: {
-            id: "comp2",
-            isTeamBased: true
-          }
-        }
-      }
-    ],
-    activeTeams: [
-      {
-        id: 1,
-        name: "The Innovators",
-        competition: {
-          event: {
-            title: "Entrepreneurship Bootcamp",
-            endTime: "2024-02-25T18:00:00.000Z"
-          }
-        }
-      }
-    ],
-    recentResults: [
-      {
-        id: 1,
-        finalScore: 95,
-        team: {
-          name: "The Visionaries"
-        },
-        competition: {
-          event: {
-            title: "Innovation Project Showcase"
-          }
-        }
-      }
-    ]
-  };
-
-  const displayData = dashboardData || mockData;
+  const teamCompetitions = registrations.filter(reg => 
+    reg.event.competition && 
+    reg.event.competition.isTeamBased &&
+    reg.event.status === 'PUBLISHED'
+  );
 
   if (isLoading) {
     return (
@@ -205,9 +160,9 @@ const DashboardPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Events Registered</p>
-                <p className="text-2xl font-bold text-foreground">{displayData.upcomingRegistrations?.length || 0}</p>
-                <p className="text-xs text-primary font-medium">upcoming events</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Registrations</p>
+                <p className="text-2xl font-bold text-foreground">{registrations.length}</p>
+                <p className="text-xs text-primary font-medium">events registered</p>
               </div>
               <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <Calendar className="w-5 h-5 text-primary" />
@@ -220,9 +175,9 @@ const DashboardPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Active Teams</p>
-                <p className="text-2xl font-bold text-foreground">{displayData.activeTeams?.length || 0}</p>
-                <p className="text-xs text-green-600 font-medium">competitions</p>
+                <p className="text-sm font-medium text-muted-foreground">Team Competitions</p>
+                <p className="text-2xl font-bold text-foreground">{teamCompetitions.length}</p>
+                <p className="text-xs text-green-600 font-medium">team events</p>
               </div>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center dark:bg-green-900/30">
                 <Users className="w-5 h-5 text-green-600" />
@@ -235,9 +190,9 @@ const DashboardPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Submissions</p>
-                <p className="text-2xl font-bold text-foreground">{mySubmissions.length}</p>
-                <p className="text-xs text-amber-600 font-medium">completed</p>
+                <p className="text-sm font-medium text-muted-foreground">Individual Competitions</p>
+                <p className="text-2xl font-bold text-foreground">{individualCompetitions.length}</p>
+                <p className="text-xs text-amber-600 font-medium">solo challenges</p>
               </div>
               <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center dark:bg-amber-900/30">
                 <Upload className="w-5 h-5 text-amber-600" />
@@ -250,9 +205,9 @@ const DashboardPage = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Achievements</p>
-                <p className="text-2xl font-bold text-foreground">5</p>
-                <p className="text-xs text-purple-600 font-medium">badges earned</p>
+                <p className="text-sm font-medium text-muted-foreground">Submissions</p>
+                <p className="text-2xl font-bold text-foreground">{mySubmissions.length}</p>
+                <p className="text-xs text-purple-600 font-medium">works submitted</p>
               </div>
               <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center dark:bg-purple-900/30">
                 <Trophy className="w-5 h-5 text-purple-600" />
@@ -268,19 +223,14 @@ const DashboardPage = () => {
           <CardHeader>
             <CardTitle className="text-lg flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-primary" />
-              Upcoming Events
+              Recent Registrations
             </CardTitle>
-            <CardDescription>Your registered events and submission opportunities</CardDescription>
+            <CardDescription>Your latest event registrations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {displayData.upcomingRegistrations?.length > 0 ? (
-              displayData.upcomingRegistrations.map((registration: any) => {
+            {registrations.length > 0 ? (
+              registrations.slice(0, 5).map((registration) => {
                 const event = registration.event;
-                const competition = event.competition;
-                const isIndividualCompetition = competition && !competition.isTeamBased;
-                const hasSubmitted = isIndividualCompetition && hasSubmittedForCompetition(competition.id);
-                
-                console.log('Event:', event.title, 'isIndividual:', isIndividualCompetition, 'hasSubmitted:', hasSubmitted);
                 
                 return (
                   <div key={registration.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition-colors">
@@ -293,46 +243,22 @@ const DashboardPage = () => {
                         <p className="text-xs text-muted-foreground">
                           {formatDate(event.startTime)} • {event.location}
                         </p>
-                        {isIndividualCompetition && (
+                        {event.competition && (
                           <Badge variant="secondary" className="mt-1 text-xs">
-                            Individual Competition
+                            {event.competition.isTeamBased ? 'Team Competition' : 'Individual Competition'}
                           </Badge>
                         )}
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      {isIndividualCompetition ? (
-                        hasSubmitted ? (
-                          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Submitted
-                          </Badge>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleMakeSubmission(competition.id)}
-                            className="bg-primary hover:bg-primary/90"
-                          >
-                            <Upload className="w-3 h-3 mr-1" />
-                            Submit
-                          </Button>
-                        )
-                      ) : (
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                          Registered
-                        </Badge>
-                      )}
                     </div>
                   </div>
                 );
               })
             ) : (
               <p className="text-muted-foreground text-center py-8">
-                You have no upcoming events. Explore and register for one!
+                No registrations found. Explore and register for events!
               </p>
             )}
-            <Button variant="ghost" className="w-full mt-3">
+            <Button variant="ghost" className="w-full mt-3" onClick={() => navigate('/student/events')}>
               View All Events
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
@@ -342,81 +268,38 @@ const DashboardPage = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center">
-              <Users className="w-5 h-5 mr-2 text-primary" />
-              Active Competitions
+              <Upload className="w-5 h-5 mr-2 text-primary" />
+              Submission Status
             </CardTitle>
-            <CardDescription>Your active team competitions</CardDescription>
+            <CardDescription>Track your competition submissions</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {displayData.activeTeams?.length > 0 ? (
-              displayData.activeTeams.map((team: any) => (
-                <div key={team.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center dark:bg-green-900/30">
-                      <Users className="w-4 h-4 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm text-foreground">{team.name}</p>
-                      <p className="text-xs text-muted-foreground">{team.competition.event.title}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">
-                      Ends: {formatDate(team.competition.event.endTime)}
-                    </p>
-                  </div>
+            {individualCompetitions.length > 0 ? (
+              <div className="space-y-3">
+                <div className="text-center p-4 bg-primary/10 rounded-lg">
+                  <p className="text-lg font-semibold text-primary">{individualCompetitions.length}</p>
+                  <p className="text-sm text-muted-foreground">Individual Competitions</p>
                 </div>
-              ))
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <p className="text-lg font-semibold text-green-600">{mySubmissions.length}</p>
+                  <p className="text-sm text-muted-foreground">Submissions Made</p>
+                </div>
+                <Button 
+                  className="w-full" 
+                  onClick={() => navigate('/student/submissions')}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Manage Submissions
+                </Button>
+              </div>
             ) : (
               <p className="text-muted-foreground text-center py-8">
-                You are not currently on a team for an active competition.
+                No individual competitions registered.
               </p>
             )}
-            <Button variant="ghost" className="w-full mt-3">
-              <Target className="w-4 h-4 mr-2" />
-              Join Competition
-            </Button>
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Results */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <Star className="w-5 h-5 mr-2 text-primary" />
-            Recent Results
-          </CardTitle>
-          <CardDescription>Your latest competition results</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {displayData.recentResults?.length > 0 ? (
-            <div className="space-y-3">
-              {displayData.recentResults.map((result: any) => (
-                <div key={result.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center dark:bg-amber-900/30">
-                      <Trophy className="w-4 h-4 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm text-foreground">{result.competition.event.title}</p>
-                      <p className="text-xs text-muted-foreground">Team: {result.team.name}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">{result.finalScore}</p>
-                    <p className="text-xs text-muted-foreground">Final Score</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">
-              No recent results to display.
-            </p>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Quick Actions */}
       <Card>
@@ -426,17 +309,29 @@ const DashboardPage = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => navigate('/student/events')}
+            >
               <Search className="w-6 h-6" />
               <span>Browse Events</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => navigate('/student/submissions')}
+            >
               <Upload className="w-6 h-6" />
-              <span>Submit Work</span>
+              <span>My Submissions</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <BarChart3 className="w-6 h-6" />
-              <span>View Progress</span>
+            <Button 
+              variant="outline" 
+              className="h-20 flex-col space-y-2"
+              onClick={() => navigate('/student/teams')}
+            >
+              <Users className="w-6 h-6" />
+              <span>My Teams</span>
             </Button>
             <Button variant="outline" className="h-20 flex-col space-y-2">
               <Award className="w-6 h-6" />
@@ -445,17 +340,6 @@ const DashboardPage = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Submission Modal */}
-      <SubmissionModal
-        competitionId={selectedCompetitionId || undefined}
-        isOpen={submissionModalOpen}
-        onClose={() => {
-          setSubmissionModalOpen(false);
-          setSelectedCompetitionId(null);
-        }}
-        onSuccess={handleSubmissionSuccess}
-      />
     </div>
   );
 };
