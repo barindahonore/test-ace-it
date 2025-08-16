@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { 
@@ -41,6 +42,7 @@ function StudentSidebar() {
     { title: "My Events", url: "/student/events", icon: Trophy },
     { title: "My Teams", url: "/student/teams", icon: Users },
     { title: "Submissions", url: "/student/submissions", icon: FileText },
+    { title: "Achievements", url: "/student/achievements", icon: Award },
     { title: "Profile", url: "/student/profile", icon: User },
   ];
 
