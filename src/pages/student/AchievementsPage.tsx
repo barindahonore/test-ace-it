@@ -3,7 +3,6 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Trophy, Users, User, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '@/services/api';
@@ -44,19 +43,6 @@ const AchievementsPage: React.FC = () => {
       new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
     );
   }, [achievements]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'SCORED':
-        return <Badge variant="default" className="bg-green-100 text-green-800">Scored</Badge>;
-      case 'REVIEWED':
-        return <Badge variant="secondary">Reviewed</Badge>;
-      case 'PENDING':
-        return <Badge variant="outline">Pending</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
 
   const getTypeIcon = (isTeamBased: boolean) => {
     return isTeamBased ? (
@@ -157,7 +143,6 @@ const AchievementsPage: React.FC = () => {
                     <TableHead>Competition</TableHead>
                     <TableHead>Team/Individual</TableHead>
                     <TableHead>Score</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Submitted Date</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -192,9 +177,6 @@ const AchievementsPage: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         {getScoreDisplay(achievement.finalScore)}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(achievement.status)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1 text-sm text-muted-foreground">

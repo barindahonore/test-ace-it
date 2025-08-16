@@ -2,24 +2,13 @@
 import { useState, useEffect } from "react";
 import { 
   Calendar, 
-  BookOpen, 
   Trophy, 
-  Clock, 
   Users, 
-  ChevronRight,
-  Star,
   Upload,
-  Search,
-  BarChart3,
-  Award,
-  Target
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import api from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
 
 interface Registration {
   id: string;
@@ -61,7 +50,6 @@ const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const fetchDashboardData = async () => {
     try {
@@ -105,10 +93,6 @@ const DashboardPage = () => {
   }, [toast]);
 
   // Filter registrations by type
-  const upcomingEvents = registrations.filter(reg => 
-    reg.event.status === 'PUBLISHED' && new Date(reg.event.startTime) > new Date()
-  );
-  
   const individualCompetitions = registrations.filter(reg => 
     reg.event.competition && 
     !reg.event.competition.isTeamBased &&
@@ -134,23 +118,13 @@ const DashboardPage = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-600 mb-4">{error}</p>
-          <Button onClick={() => fetchDashboardData()}>
+          <button onClick={() => fetchDashboardData()} className="bg-primary text-white px-4 py-2 rounded">
             Try Again
-          </Button>
+          </button>
         </div>
       </div>
     );
   }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -216,130 +190,6 @@ const DashboardPage = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-primary" />
-              Recent Registrations
-            </CardTitle>
-            <CardDescription>Your latest event registrations</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {registrations.length > 0 ? (
-              registrations.slice(0, 5).map((registration) => {
-                const event = registration.event;
-                
-                return (
-                  <div key={registration.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/20 hover:bg-muted/40 transition-colors">
-                    <div className="flex items-center space-x-3 flex-1">
-                      <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Calendar className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm text-foreground">{event.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(event.startTime)} • {event.location}
-                        </p>
-                        {event.competition && (
-                          <Badge variant="secondary" className="mt-1 text-xs">
-                            {event.competition.isTeamBased ? 'Team Competition' : 'Individual Competition'}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-muted-foreground text-center py-8">
-                No registrations found. Explore and register for events!
-              </p>
-            )}
-            <Button variant="ghost" className="w-full mt-3" onClick={() => navigate('/student/events')}>
-              View All Events
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center">
-              <Upload className="w-5 h-5 mr-2 text-primary" />
-              Submission Status
-            </CardTitle>
-            <CardDescription>Track your competition submissions</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {individualCompetitions.length > 0 ? (
-              <div className="space-y-3">
-                <div className="text-center p-4 bg-primary/10 rounded-lg">
-                  <p className="text-lg font-semibold text-primary">{individualCompetitions.length}</p>
-                  <p className="text-sm text-muted-foreground">Individual Competitions</p>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <p className="text-lg font-semibold text-green-600">{mySubmissions.length}</p>
-                  <p className="text-sm text-muted-foreground">Submissions Made</p>
-                </div>
-                <Button 
-                  className="w-full" 
-                  onClick={() => navigate('/student/submissions')}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Manage Submissions
-                </Button>
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">
-                No individual competitions registered.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
-          <CardDescription>Frequently used features and shortcuts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button 
-              variant="outline" 
-              className="h-20 flex-col space-y-2"
-              onClick={() => navigate('/student/events')}
-            >
-              <Search className="w-6 h-6" />
-              <span>Browse Events</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-20 flex-col space-y-2"
-              onClick={() => navigate('/student/submissions')}
-            >
-              <Upload className="w-6 h-6" />
-              <span>My Submissions</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              className="h-20 flex-col space-y-2"
-              onClick={() => navigate('/student/teams')}
-            >
-              <Users className="w-6 h-6" />
-              <span>My Teams</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Award className="w-6 h-6" />
-              <span>Achievements</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
