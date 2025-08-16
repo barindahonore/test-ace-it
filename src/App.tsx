@@ -43,13 +43,20 @@ import LeaderboardPage from '@/pages/competitions/LeaderboardPage';
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
+      <Router>
+        <AuthProvider>
           <div className="min-h-screen bg-background">
             <Routes>
               {/* Public Routes */}
@@ -128,8 +135,8 @@ function App() {
             </Routes>
             <Toaster />
           </div>
-        </Router>
-      </AuthProvider>
+        </AuthProvider>
+      </Router>
     </QueryClientProvider>
   );
 }

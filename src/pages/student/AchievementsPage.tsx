@@ -24,19 +24,26 @@ interface Achievement {
   };
 }
 
-const AchievementsPage = () => {
+const AchievementsPage: React.FC = () => {
   const { data: achievements = [], isLoading, error } = useQuery({
     queryKey: ['achievements'],
     queryFn: async (): Promise<Achievement[]> => {
-      const response = await api.get('/submissions/me');
-      return response.data.data || [];
+      try {
+        const response = await api.get('/submissions/me');
+        return response.data.data || [];
+      } catch (error) {
+        console.error('Failed to fetch achievements:', error);
+        return [];
+      }
     }
   });
 
   // Sort achievements by most recent first
-  const sortedAchievements = [...achievements].sort((a, b) => 
-    new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
-  );
+  const sortedAchievements = React.useMemo(() => {
+    return [...achievements].sort((a, b) => 
+      new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
+    );
+  }, [achievements]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -192,7 +199,9 @@ const AchievementsPage = () => {
                       <TableCell>
                         <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                           <Calendar className="w-4 h-4" />
-                          <span>{format(new Date(achievement.submittedAt), 'MMM dd, yyyy')}</span>
+                          <span>
+                            {format(new Date(achievement.submittedAt), 'MMM dd, yyyy')}
+                          </span>
                         </div>
                       </TableCell>
                     </TableRow>
