@@ -76,7 +76,7 @@ function App() {
                   <EventsListPage />
                 </>
               } />
-              <Route path="/events/:eventId" element={
+              <Route path="/events/:id" element={
                 <>
                   <Header />
                   <EventDetailPage />
@@ -111,7 +111,7 @@ function App() {
                 <Route index element={<Navigate to="/student/dashboard" replace />} />
                 <Route path="dashboard" element={<StudentDashboardPage />} />
                 <Route path="events" element={<StudentEventsPage />} />
-                <Route path="events/:eventId" element={<StudentEventDetailPage />} />
+                <Route path="events/:id" element={<StudentEventDetailPage />} />
                 <Route path="teams" element={<MyTeamsPage />} />
                 <Route path="submissions" element={<MySubmissionsPage />} />
                 <Route path="achievements" element={<AchievementsPage />} />
