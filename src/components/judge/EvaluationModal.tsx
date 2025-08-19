@@ -176,7 +176,7 @@ const EvaluationModal: React.FC<EvaluationModalProps> = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <h3 className="font-medium">Team: {submission.team.name}</h3>
+                <h3 className="font-medium">Team: {submission.team?.name}</h3>
               </div>
               
               {submission.content.url && (

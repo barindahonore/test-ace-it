@@ -14,6 +14,8 @@ const SubmissionsList: React.FC<SubmissionsListProps> = ({
   submissions,
   onSelectSubmission,
 }) => {
+
+  console.log(">>>>>>>>>",submissions)
   const getStatusBadge = (submission: Submission) => {
     if (submission.finalScore !== null && submission.finalScore !== undefined) {
       return (
@@ -51,7 +53,7 @@ const SubmissionsList: React.FC<SubmissionsListProps> = ({
             {/* Team Name and Status */}
             <div className="flex items-start justify-between">
               <h3 className="font-medium text-foreground leading-tight">
-                {submission.team.name}
+                {submission.team?.name}
               </h3>
               {getStatusBadge(submission)}
             </div>
