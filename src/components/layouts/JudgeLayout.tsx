@@ -36,11 +36,8 @@ function JudgeSidebar() {
   const { logout, user } = useAuth();
   
   const menuItems = [
-    { title: "Dashboard", url: "/judge/dashboard", icon: Home },
     { title: "Event Judging", url: "/judge/events", icon: FileCheck },
-    { title: "Evaluation History", url: "/judge/history", icon: BarChart3 },
     { title: "Profile", url: "/judge/profile", icon: User },
-    { title: "Settings", url: "/judge/settings", icon: Settings },
   ];
 
   const handleLogout = () => {

@@ -12,6 +12,7 @@ import Register from "./pages/Register";
 import StudentLayout from "./components/layouts/StudentLayout";
 import StudentDashboard from "./pages/student/DashboardPage";
 import ProfilePage from "./pages/student/ProfilePage";
+import JudgeProfilePage from "./pages/judge/ProfilePage";
 import StudentEventsPage from "./pages/student/EventsPage";
 import StudentEventDetailPage from "./pages/student/EventDetailPage";
 import MySubmissionsPage from "./pages/student/MySubmissionsPage";
@@ -73,9 +74,11 @@ const App = () => (
                 </ProtectedRoute>
               } 
             >
-              <Route path="dashboard" element={<JudgeDashboard />} />
+              {/* <Route path="dashboard" element={<JudgeDashboard />} /> */}
+              <Route index element={<EventsPage />} />
               <Route path="events" element={<EventsPage />} />
               <Route path="competitions/:id/evaluate" element={<EvaluationPage />} />
+              <Route path="profile" element={<JudgeProfilePage />} />
             </Route>
             <Route 
               path="/admin-dashboard" 
