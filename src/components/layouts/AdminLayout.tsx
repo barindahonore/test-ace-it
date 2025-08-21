@@ -40,8 +40,7 @@ function AdminSidebar() {
     { title: "Event Management", url: "/admin/events", icon: Calendar },
     { title: "User Management", url: "/admin/users", icon: Users },
     { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
-    { title: "Content Management", url: "/admin/content", icon: FileText },
-    { title: "System Settings", url: "/admin/settings", icon: Settings },
+    { title: "Profile", url: "/admin/profile", icon: User },
   ];
 
   const handleLogout = () => {

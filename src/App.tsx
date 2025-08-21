@@ -26,6 +26,7 @@ import DashboardPage from "./pages/admin/DashboardPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import EventManagementPage from "./pages/admin/EventManagementPage";
 import CompetitionManagementPage from "./pages/admin/CompetitionManagementPage";
+import AdminProfilePage from "./pages/admin/ProfilePage";
 import NotFound from "./pages/NotFound";
 import MyTeamsPage from "./pages/student/MyTeamsPage";
 import EventsListPage from "./pages/events/EventsListPage";
@@ -100,6 +101,7 @@ const App = () => (
               <Route path="users" element={<UserManagementPage />} />
               <Route path="events" element={<EventManagementPage />} />
               <Route path="competitions/:id/manage" element={<CompetitionManagementPage />} />
+              <Route path="profile" element={<AdminProfilePage />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

@@ -252,7 +252,6 @@ const EventFormModal: React.FC<EventFormModalProps> = ({
                 <SelectContent>
                   <SelectItem value="DRAFT">Draft</SelectItem>
                   <SelectItem value="PUBLISHED">Published</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
