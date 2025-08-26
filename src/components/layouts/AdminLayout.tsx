@@ -40,6 +40,7 @@ function AdminSidebar() {
     { title: "Event Management", url: "/admin/events", icon: Calendar },
     { title: "User Management", url: "/admin/users", icon: Users },
     { title: "Analytics", url: "/admin/analytics", icon: BarChart3 },
+    { title: "Reports", url: "/admin/reports", icon: FileText },
     { title: "Profile", url: "/admin/profile", icon: User },
   ];
 

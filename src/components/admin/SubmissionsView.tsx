@@ -166,15 +166,22 @@ const SubmissionsView: React.FC<SubmissionsViewProps> = ({ competitionId }) => {
                   {submissions.map((submission) => (
                     <TableRow key={submission.id} className="hover:bg-muted/30">
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
-                            {submission.team.name[0]?.toUpperCase()}
+                        {submission.team ? (
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                              {submission.team.name[0]?.toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">{submission.team.name}</p>
+                              <Badge variant="secondary" className="text-xs">Team</Badge>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-foreground">{submission.team.name}</p>
-                            <Badge variant="secondary" className="text-xs">Team</Badge>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-foreground">Individual</span>
+                            <Badge variant="secondary" className="text-xs">Solo</Badge>
                           </div>
-                        </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(submission.status)}>
@@ -192,9 +199,19 @@ const SubmissionsView: React.FC<SubmissionsViewProps> = ({ competitionId }) => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar className="w-4 h-4" />
-                          <span className="text-sm">{new Date(submission.submittedAt).toLocaleDateString()}</span>
+                        <div className="flex flex-col gap-1 text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            <span className="text-sm">{new Date(submission.submittedAt).toLocaleDateString()}</span>
+                          </div>
+                          {/* If location and hour are available, display them here. Adjust field names as needed. */}
+                          {/* Location not available on Submission object */}
+                          {submission.submittedAt && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs">Hour:</span>
+                              <span className="text-xs font-medium">{new Date(submission.submittedAt).toLocaleTimeString()}</span>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

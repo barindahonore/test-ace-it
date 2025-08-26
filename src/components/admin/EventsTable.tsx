@@ -17,7 +17,8 @@ import {
   Users, 
   Trophy,
   Settings,
-  Calendar
+  Calendar,
+  BarChart3
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -105,6 +106,15 @@ const EventsTable: React.FC<EventsTableProps> = ({
             </TableCell>
             <TableCell>
               <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/admin/events/${event.id}/survey-results`)}
+                  title="View Survey Results"
+                  className="text-blue-700 border-blue-200 hover:bg-blue-50"
+                >
+                  <BarChart3 className="w-4 h-4 mr-1" /> Survey
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"

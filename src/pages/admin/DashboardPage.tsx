@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, UserPlus, Calendar, Trophy, Settings, Plus, UserCheck, BarChart3, Database, Activity, Award, TrendingUp, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import api from '@/services/api';
@@ -53,6 +54,7 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -223,22 +225,18 @@ const DashboardPage: React.FC = () => {
           <CardDescription>Frequently used administrative functions</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Button variant="outline" className="h-20 flex-col space-y-2" onClick={() => navigate('/admin/events')}>
               <Plus className="w-6 h-6" />
               <span>Create Event</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button variant="outline" className="h-20 flex-col space-y-2" onClick={() => navigate('/admin/users')}>
               <UserCheck className="w-6 h-6" />
               <span>Add User</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
+            <Button variant="outline" className="h-20 flex-col space-y-2" onClick={() => navigate('/admin/reports')}>
               <BarChart3 className="w-6 h-6" />
               <span>View Reports</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col space-y-2">
-              <Database className="w-6 h-6" />
-              <span>Backup Data</span>
             </Button>
           </div>
         </CardContent>

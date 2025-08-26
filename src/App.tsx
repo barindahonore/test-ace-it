@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import SurveyResultsPage from './pages/admin/SurveyResultsPage';
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -26,6 +27,8 @@ import DashboardPage from "./pages/admin/DashboardPage";
 import UserManagementPage from "./pages/admin/UserManagementPage";
 import EventManagementPage from "./pages/admin/EventManagementPage";
 import CompetitionManagementPage from "./pages/admin/CompetitionManagementPage";
+import AnalyticsPage from "./pages/admin/AnalyticsPage";
+import ReportsPage from "./pages/admin/ReportsPage";
 import AdminProfilePage from "./pages/admin/ProfilePage";
 import NotFound from "./pages/NotFound";
 import MyTeamsPage from "./pages/student/MyTeamsPage";
@@ -100,7 +103,10 @@ const App = () => (
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="users" element={<UserManagementPage />} />
               <Route path="events" element={<EventManagementPage />} />
+              <Route path="events/:id/survey-results" element={<SurveyResultsPage />} />
               <Route path="competitions/:id/manage" element={<CompetitionManagementPage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="reports" element={<ReportsPage />} />
               <Route path="profile" element={<AdminProfilePage />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

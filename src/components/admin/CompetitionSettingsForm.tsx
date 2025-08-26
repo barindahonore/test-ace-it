@@ -140,8 +140,8 @@ const CompetitionSettingsForm: React.FC<CompetitionSettingsFormProps> = ({
           <h3 className="text-lg font-semibold text-foreground">Judging Criteria</h3>
           
           <div className="max-h-64 overflow-y-auto space-y-3">
-            {judgingCriteria.map((criterion) => (
-              <div key={criterion.id} className="space-y-2 p-3 border rounded-lg">
+                  {judgingCriteria.map((criterion, idx) => (
+                    <div key={criterion.id || `${criterion.name}-${idx}`} className="space-y-2 p-3 border rounded-lg">
                 <div className="flex items-center justify-between">
                   <Input
                     placeholder="Criterion name"
