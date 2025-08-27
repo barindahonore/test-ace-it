@@ -53,7 +53,13 @@ const SubmissionsList: React.FC<SubmissionsListProps> = ({
             {/* Team Name and Status */}
             <div className="flex items-start justify-between">
               <h3 className="font-medium text-foreground leading-tight">
-                {submission.team?.name}
+                {/* {submission.team?.name} */}
+                {/* console.log(submission) */}
+                {submission.team ? (
+                  <span>Team: {submission.team?.name}</span>
+                ) : (
+                  <span>Individual: {submission.submitter?.firstName} {submission.submitter?.lastName}</span>
+                )}
               </h3>
               {getStatusBadge(submission)}
             </div>

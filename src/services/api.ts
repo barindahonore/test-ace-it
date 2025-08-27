@@ -210,6 +210,13 @@ export interface Submission {
   submittedAt: string;
   status: 'PENDING' | 'REVIEWED' | 'SCORED';
   finalScore?: number;
+  competition?: {
+    isTeamBased: boolean;
+  };
+  submitter?: {
+    firstName: string;
+    lastName: string;
+  };
 }
 
 export const getAllEvents = async (filters: EventFilters = {}) => {
@@ -283,11 +290,13 @@ export const getCompetitionTeams = async (competitionId: string): Promise<Team[]
 
 export const getCompetitionSubmissions = async (competitionId: string): Promise<Submission[]> => {
   const response = await api.get(`/competitions/${competitionId}/submissions`);
+  console.log("============= Competition Submissions =============",response.data)
   return response.data.data;
 };
 
 // Judge Evaluation API
 export interface SubmissionDetail {
+  [x: string]: any;
   id: string;
   content: {
     url?: string;
@@ -299,6 +308,13 @@ export interface SubmissionDetail {
   submittedAt: string;
   status: 'PENDING' | 'REVIEWED' | 'SCORED';
   finalScore?: number;
+  competition: {
+    isTeamBased: boolean;
+  }
+  submitter?: {
+    firstName: string;
+    lastName: string;
+  };
 }
 
 export interface EvaluationData {
