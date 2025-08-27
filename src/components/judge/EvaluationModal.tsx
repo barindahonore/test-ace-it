@@ -143,7 +143,7 @@ const EvaluationModal: React.FC<EvaluationModalProps> = ({
     }
   };
 
-  const totalPossibleScore = judgingCriteria.reduce((sum, criterion) => sum + criterion.weight, 0);
+  const totalPossibleScore = judgingCriteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
   const currentTotalScore = judgingCriteria.reduce((sum, criterion) => {
     const score = form.watch(`scores.${criterion.name}`) || 0;
     return sum + score;
@@ -236,7 +236,7 @@ const EvaluationModal: React.FC<EvaluationModalProps> = ({
                           <div className="flex items-center justify-between">
                             <FormLabel>{criterion.name}</FormLabel>
                             <span className="text-xs text-muted-foreground">
-                              Max: {criterion.weight}
+                              Max: {criterion.maxScore}
                             </span>
                           </div>
                           {criterion.description && (
@@ -248,9 +248,9 @@ const EvaluationModal: React.FC<EvaluationModalProps> = ({
                             <Input
                               type="number"
                               min={0}
-                              max={criterion.weight}
+                              max={criterion.maxScore}
                               step={1}
-                              placeholder={`0 - ${criterion.weight}`}
+                              placeholder={`0 - ${criterion.maxScore}`}
                               {...field}
                               onChange={(e) => field.onChange(Number(e.target.value))}
                             />

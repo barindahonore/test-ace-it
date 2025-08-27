@@ -1,5 +1,6 @@
 
 import React from 'react';
+import logo from '@/assets/logo.png';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { 
@@ -53,17 +54,9 @@ function AdminSidebar() {
   return (
     <Sidebar className={isCollapsed ? "w-16" : "w-64"} collapsible="icon">
       <SidebarContent className="bg-card border-r border-border">
-        <div className="p-4 border-b border-border">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
-            {!isCollapsed && (
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">EduEvents</h2>
-                <p className="text-xs text-muted-foreground">Admin Portal</p>
-              </div>
-            )}
+        <div className="p-4 border-b border-border bg-blue-100">
+          <div className="flex items-center justify-center">
+            <img src={logo} alt="Logo" className="w-20 h-20 object-contain" />
           </div>
         </div>
 

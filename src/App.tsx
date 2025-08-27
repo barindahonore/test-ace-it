@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SurveyResultsPage from './pages/admin/SurveyResultsPage';
+import FeedbackPage from './pages/events/FeedbackPage';
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/events" element={<EventsListPage />} />
             <Route path="/events/:id" element={<EventDetailPage />} />
+             <Route path="/events/:id/feedback" element={<ProtectedRoute allowedRoles={['STUDENT']}><FeedbackPage /></ProtectedRoute>} />
             <Route path="/competitions/:id/leaderboard" element={<LeaderboardPage />} />
             
             <Route 

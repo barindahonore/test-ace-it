@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Users, Calendar, Award, BarChart3, TrendingUp } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Loader2 } from 'lucide-react';
 import { api } from '@/services/api';
 
@@ -156,45 +156,33 @@ const AnalyticsPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={Array.isArray(userGrowth) ? userGrowth.map(u => ({ month: u.month, count: u.count })) : []}>
+                <LineChart data={Array.isArray(userGrowth) ? userGrowth.map(u => ({ month: u.month, count: u.count })) : []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" tick={{fontSize: 14}} />
                   <YAxis tick={{fontSize: 14}} />
                   <Tooltip wrapperClassName="!text-sm !font-medium" />
-                  <Bar dataKey="count" fill="#2563eb" radius={[6, 6, 0, 0]} />
-                </BarChart>
+                  <Line type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          {/* Top Engaging Events - dashboard style */}
+          {/* Top Engaging Events - Line chart style */}
           <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200 dark:from-green-900/20 dark:to-green-900/10 dark:border-green-800">
             <CardHeader>
               <CardTitle className="text-lg font-bold text-green-700">Top Engaging Events</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/50">
-                      <th className="px-4 py-2 text-left font-semibold text-green-700">Event Title</th>
-                      <th className="px-4 py-2 text-left font-semibold text-green-700">Registrations</th>
-                      <th className="px-4 py-2 text-left font-semibold text-green-700">Submissions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.isArray(eventEngagement) && eventEngagement.length > 0 ? eventEngagement.map(event => (
-                      <tr key={event.eventId} className="border-b hover:bg-green-100 transition">
-                        <td className="px-4 py-2 font-medium">{event.title ?? '-'}</td>
-                        <td className="px-4 py-2 font-medium">{typeof event.registrationCount === 'number' ? event.registrationCount : '-'}</td>
-                        <td className="px-4 py-2 font-medium">{typeof event.submissionCount === 'number' ? event.submissionCount : '-'}</td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={3} className="px-4 py-2 text-center text-muted-foreground">No data available</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={Array.isArray(eventEngagement) ? eventEngagement.map(e => ({ title: e.title, registrations: e.registrationCount, submissions: e.submissionCount })) : []}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="title" tick={{fontSize: 14}} />
+                  <YAxis tick={{fontSize: 14}} />
+                  <Tooltip wrapperClassName="!text-sm !font-medium" />
+                  <Line type="monotone" dataKey="registrations" stroke="#22c55e" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Registrations" />
+                  <Line type="monotone" dataKey="submissions" stroke="#2563eb" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Submissions" />
+                </LineChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </>
